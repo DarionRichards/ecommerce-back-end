@@ -14,7 +14,7 @@ const schema = {
     productId: {
         type: DataTypes.INTEGER,
         reference: {
-            model: "Product",
+            model: "product",
             key: "id",
         },
     },
