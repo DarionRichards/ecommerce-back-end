@@ -1,4 +1,6 @@
-const getAllCategories = (req, res) => {
+const { Category, Product } = require("../../models");
+
+const getAllCategories = async(req, res) => {
     // find all categories
     // be sure to include its associated Products
     res.send("getAllCategories");
