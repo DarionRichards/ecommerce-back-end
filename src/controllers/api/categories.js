@@ -5,9 +5,9 @@ const getAllCategories = async(req, res) => {
     // be sure to include its associated Products
     try {
         const categories = await Category.findAll({ include: Product });
-        res.status(200).json(categories);
+        return res.status(200).json({ success: true, data: categories });
     } catch (err) {
-        res.status(500).json(err);
+        return res.status(500).json({ success: false, error: err.message });
     }
 };
 
@@ -19,15 +19,32 @@ const getCategoryById = async(req, res) => {
         const categoryId = await Category.findByPk(req.params.id, {
             include: Product,
         });
-        res.status(200).json(categoryId);
+        return res.status(200).json({ success: true, category: categoryId });
     } catch (err) {
-        res.status(500).json(err);
+        return res.status(500).json({ success: false, error: err.message });
     }
 };
 
-const createCategory = (req, res) => {
+const createCategory = async(req, res) => {
     // create a new category
-    res.send("createCategory");
+    try {
+        const { categoryName } = req.body;
+        console.log(categoryName);
+
+        const newCategory = await Category.create({
+            categoryName: categoryName,
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: newCategory,
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            error: err.message,
+        });
+    }
 };
 
 const updateCategory = (req, res) => {
