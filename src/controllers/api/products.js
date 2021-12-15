@@ -1,7 +1,25 @@
-const getAllProducts = (req, res) => {
+const { Product, Category, Tag } = require("../../models");
+
+const getAllProducts = async(req, res) => {
     // find all products
     // be sure to include its associated Category and Tag data
-    res.send("getAllProducts");
+    try {
+        const data = await Product.findAll({
+            include: {
+                model: Category,
+                model: Tag,
+            },
+        });
+        return res.status(200).json({
+            success: true,
+            data: data,
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            error: err.message,
+        });
+    }
 };
 
 const getProductById = (req, res) => {
