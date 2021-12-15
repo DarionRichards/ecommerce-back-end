@@ -47,9 +47,29 @@ const createCategory = async(req, res) => {
     }
 };
 
-const updateCategory = (req, res) => {
+const updateCategory = async(req, res) => {
     // update a category by its `id` value
-    res.send("updateCategory");
+    try {
+        const { id } = req.params;
+        console.log(id);
+        const { categoryName } = req.body;
+        console.log(categoryName);
+
+        await Category.update({
+            categoryName: categoryName,
+        }, {
+            where: {
+                id: id,
+            },
+        });
+
+        const newCategory = await Category.findByPk(id);
+        console.log(newCategory);
+
+        res.status(200).json({ success: true, data: updateCategory });
+    } catch (err) {
+        res.status(500).json({ succes: false, error: err.message });
+    }
 };
 
 const deleteCategory = (req, res) => {
