@@ -3,7 +3,13 @@ const { Category, Product } = require("../../models");
 const getAllCategories = async(req, res) => {
     // find all categories
     // be sure to include its associated Products
-    res.send("getAllCategories");
+
+    try {
+        const categories = await Category.findAll({ include: Product });
+        res.status(200).json(categories);
+    } catch (err) {
+        res.status(500).json(err);
+    }
 };
 
 const findCategory = (req, res) => {
