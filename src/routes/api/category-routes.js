@@ -2,7 +2,7 @@ const { Router } = require("express");
 
 const {
     getAllCategories,
-    findCategory,
+    getCategoryById,
     createCategory,
     updateCategory,
     deleteCategory,
@@ -14,7 +14,7 @@ const router = Router();
 
 router.get("/", getAllCategories);
 
-router.get("/:id", findCategory);
+router.get("/:id", getCategoryById);
 
 router.post("/", createCategory);
 
