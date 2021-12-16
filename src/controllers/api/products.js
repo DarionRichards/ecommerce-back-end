@@ -1,4 +1,5 @@
 const { Product, Category, Tag, ProductTag } = require("../../models");
+const { update } = require("../../models/Category");
 
 const getAllProducts = async(req, res) => {
     // find all products
@@ -72,46 +73,68 @@ const createProduct = async(req, res) => {
         return res.status(500).json(err.message);
     }
 };
-const updateProductById = (req, res) => {
-    // update product data
-    // Product.update(req.body, {
-    //         where: {
-    //             id: req.params.id,
-    //         },
-    //     })
-    //     .then((product) => {
-    //         // find all associated tags from ProductTag
-    //         return ProductTag.findAll({ where: { product_id: req.params.id } });
-    //     })
-    //     .then((productTags) => {
-    //         // get list of current tag_ids
-    //         const productTagIds = productTags.map(({ tag_id }) => tag_id);
-    //         // create filtered list of new tag_ids
-    //         const newProductTags = req.body.tagIds
-    //             .filter((tag_id) => !productTagIds.includes(tag_id))
-    //             .map((tag_id) => {
-    //                 return {
-    //                     product_id: req.params.id,
-    //                     tag_id,
-    //                 };
-    //             });
-    //         // figure out which ones to remove
-    //         const productTagsToRemove = productTags
-    //             .filter(({ tag_id }) => !req.body.tagIds.includes(tag_id))
-    //             .map(({ id }) => id);
+const updateProductById = async(req, res) => {
+    try {
+        const { id } = req.params;
+        const { productName, price, stock, tagIds } = req.body;
+        console.log("Tag Payload:", tagIds);
 
-    //         // run both actions
-    //         return Promise.all([
-    //             ProductTag.destroy({ where: { id: productTagsToRemove } }),
-    //             ProductTag.bulkCreate(newProductTags),
-    //         ]);
-    //     })
-    //     .then((updatedProductTags) => res.json(updatedProductTags))
-    //     .catch((err) => {
-    //         // console.log(err);
-    //         res.status(400).json(err);
-    //     });
-    res.send("updateProductById");
+        // update product with name, price & stock
+        await Product.update({
+            productName,
+            price,
+            stock,
+        }, {
+            where: {
+                id: id,
+            },
+        });
+        const updatedProduct = await Product.findByPk(id);
+
+        // get current tags related to productId
+        const associatedProductTags = await ProductTag.findAll({
+            where: { productId: id },
+        });
+        const currentProductTags = associatedProductTags.map(({ tagId }) => tagId);
+
+        const newProductTags = tagIds
+            .filter((tagId) => !currentProductTags.includes(tagId))
+            .map((tagId) => {
+                return {
+                    productId: id,
+                    tagId,
+                };
+            });
+
+        console.log("Current Product Tags:", currentProductTags);
+        console.log("New Tags:", newProductTags);
+
+        const productTagsToRemove = currentProductTags
+            .filter((tagId) => !tagIds.includes(tagId))
+            .map((tagId) => tagId);
+
+        console.log("Product Tags to be Removed:", productTagsToRemove);
+
+        await ProductTag.destroy({
+            where: {
+                productId: id,
+                tagId: productTagsToRemove,
+            },
+        });
+        await ProductTag.bulkCreate(newProductTags);
+
+        res.status(200).json({
+            success: true,
+            data: updatedProduct,
+            currentProductTags,
+            newProductTags,
+        });
+    } catch (err) {
+        res.status(500).json({
+            success: false,
+            error: err.message,
+        });
+    }
 };
 
 const deleteProductById = (req, res) => {
