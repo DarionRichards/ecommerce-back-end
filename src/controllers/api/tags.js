@@ -18,10 +18,23 @@ const getAllTags = async(req, res) => {
     }
 };
 
-const getTagById = (req, res) => {
+const getTagById = async(req, res) => {
     // find a single tag by its `id`
     // be sure to include its associated Product data
-    res.send("getTagById");
+
+    try {
+        const { id } = req.params;
+        const tagData = await Tag.findByPk(id, {
+            include: Product,
+        });
+
+        return res.status(200).json(tagData);
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            error: err.message,
+        });
+    }
 };
 
 const createTag = (req, res) => {
