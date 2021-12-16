@@ -123,23 +123,54 @@ const updateProductById = async(req, res) => {
         });
         await ProductTag.bulkCreate(newProductTags);
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             data: updatedProduct,
             currentProductTags,
             newProductTags,
         });
     } catch (err) {
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             error: err.message,
         });
     }
 };
 
-const deleteProductById = (req, res) => {
-    // delete one product by its `id` value
-    res.send("deleteProductById");
+const deleteProductById = async(req, res) => {
+    try {
+        const { id } = req.params;
+
+        const productExists = await Product.findByPk(id);
+        if (!productExists) {
+            return res.status(500).json({
+                success: false,
+                message: "Product does not exits",
+            });
+        }
+
+        await Product.destroy({
+            where: {
+                id: id,
+            },
+        });
+
+        await ProductTag.destroy({
+            where: {
+                productId: id,
+            },
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Product and Product Tags deleted successfully",
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            error: err.message,
+        });
+    }
 };
 
 module.exports = {
