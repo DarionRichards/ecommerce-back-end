@@ -42,25 +42,68 @@ const createTag = async(req, res) => {
     try {
         const { tagName } = req.body;
 
-        if (tagName) {
+        const tagNameExist = await Tag.findOne({
+            where: {
+                tagName: tagName,
+            },
+        });
+
+        if (!tagNameExist) {
+            const newTag = await Tag.create({
+                tagName,
+            });
+            return res.status(200).json({
+                success: true,
+                data: newTag,
+            });
+        } else {
             return res.status(403).json({
                 success: false,
                 message: "Tag already exists in database.",
             });
-        } else {
-            const newTag = await Tag.create({
-                tagName,
-            });
-            return res.status(200).json(newTag);
         }
     } catch (error) {
         return res.status(500).json();
     }
 };
 
-const updateTagById = (req, res) => {
+const updateTagById = async(req, res) => {
     // update a tag's name by its `id` value
-    res.send("updateTagById");
+    try {
+        const { id } = req.params;
+        const { tagName } = req.body;
+
+        const tagExists = await Tag.findOne({
+            where: {
+                id: id,
+            },
+        });
+
+        if (tagExists) {
+            const updatedTag = await Tag.update({
+                tagName: tagName,
+            }, {
+                where: {
+                    id: id,
+                },
+            });
+
+            return res.status(200).json({
+                success: true,
+                data: updatedTag,
+            });
+        } else {
+            return res.status(403).json({
+                success: false,
+                message: "This Tag ID already exist",
+            });
+        }
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            error: err.message,
+        });
+    }
 };
 
 const deleteTagById = (req, res) => {
