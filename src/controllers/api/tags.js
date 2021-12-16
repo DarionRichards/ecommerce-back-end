@@ -37,9 +37,25 @@ const getTagById = async(req, res) => {
     }
 };
 
-const createTag = (req, res) => {
+const createTag = async(req, res) => {
     // create a new tag
-    res.send("createTag");
+    try {
+        const { tagName } = req.body;
+
+        if (tagName) {
+            return res.status(403).json({
+                success: false,
+                message: "Tag already exists in database.",
+            });
+        } else {
+            const newTag = await Tag.create({
+                tagName,
+            });
+            return res.status(200).json(newTag);
+        }
+    } catch (error) {
+        return res.status(500).json();
+    }
 };
 
 const updateTagById = (req, res) => {
