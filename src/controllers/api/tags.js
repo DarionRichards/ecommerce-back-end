@@ -1,7 +1,21 @@
-const getAllTags = (req, res) => {
-    // find all tags
-    // be sure to include its associated Product data
-    res.send("getAllTags");
+const { Tag, Product } = require("../../models");
+
+const getAllTags = async(req, res) => {
+    try {
+        const tagData = await Tag.findAll({
+            include: Product,
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: tagData,
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            error: err.message,
+        });
+    }
 };
 
 const getTagById = (req, res) => {
