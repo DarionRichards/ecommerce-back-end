@@ -1,4 +1,5 @@
 const { Tag, Product } = require("../../models");
+const { findAll } = require("../../models/Category");
 
 const getAllTags = async(req, res) => {
     try {
@@ -106,9 +107,36 @@ const updateTagById = async(req, res) => {
     }
 };
 
-const deleteTagById = (req, res) => {
+const deleteTagById = async(req, res) => {
     // delete on tag by its `id` value
-    res.send("deleteTagById");
+    const { id } = req.params;
+
+    try {
+        const idExists = await Tag.findOne({
+            where: {
+                id: id,
+            },
+        });
+
+        if (idExists) {
+            await Tag.destroy({ where: { id } });
+
+            return res.status(200).json({
+                success: true,
+                message: "Tag was deleted successfully",
+            });
+        } else {
+            return res.status(403).json({
+                success: true,
+                message: "Tag was not found",
+            });
+        }
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            error: err.message,
+        });
+    }
 };
 
 module.exports = {
