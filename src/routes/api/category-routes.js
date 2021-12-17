@@ -4,8 +4,8 @@ const {
     getAllCategories,
     getCategoryById,
     createCategory,
-    updateCategory,
-    deleteCategory,
+    updateCategoryById,
+    deleteCategoryById,
 } = require("../../controllers/api/categories");
 
 // The `/api/categories` endpoint
@@ -18,8 +18,8 @@ router.get("/:id", getCategoryById);
 
 router.post("/", createCategory);
 
-router.put("/:id", updateCategory);
+router.put("/:id", updateCategoryById);
 
-router.delete("/:id", deleteCategory);
+router.delete("/:id", deleteCategoryById);
 
 module.exports = router;
