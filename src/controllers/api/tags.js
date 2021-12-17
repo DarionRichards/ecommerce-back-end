@@ -137,11 +137,17 @@ const deleteTagById = async(req, res) => {
                 message: `Oops!! Tag was not found by ID: ${id}`,
             });
         } else {
+            const { tagName } = await Tag.findOne({
+                where: {
+                    id: id,
+                },
+            });
+
             await Tag.destroy({ where: { id } });
 
             return res.status(200).json({
                 success: true,
-                message: "Wahoo!! Tag was deleted successfully",
+                message: `Wahoo!! The tag ${tagName} was deleted successfully`,
             });
         }
     } catch (err) {
