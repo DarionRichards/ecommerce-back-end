@@ -5,12 +5,14 @@ const getAllCategories = async(req, res) => {
         const categories = await Category.findAll({
             include: Product,
         });
+        // check if categories exists
         if (!categories.length) {
             return res.status(404).json({
                 success: false,
                 message: "Oops!! No categories are found",
             });
         } else {
+            // return found categories
             return res.status(200).json({ success: true, data: categories });
         }
     } catch (err) {
@@ -20,16 +22,20 @@ const getAllCategories = async(req, res) => {
 
 const getCategoryById = async(req, res) => {
     try {
+        // get ID
         const { id } = req.params;
+
         const categoryId = await Category.findByPk(id, {
             include: Product,
         });
+        // check IF id DOES exists in Category table
         if (!categoryId) {
             return res.status(404).json({
                 success: false,
                 message: `Oops!! Category with ID: ${id}, does not exists in database`,
             });
         } else {
+            // return the category found by ID entered
             return res.status(200).json({ success: true, category: categoryId });
         }
     } catch (err) {
@@ -41,6 +47,7 @@ const createCategory = async(req, res) => {
     try {
         const { categoryName } = req.body;
 
+        // check IF request body was a valid entry
         if (!categoryName) {
             return res.status(422).json({
                 success: false,
@@ -52,13 +59,14 @@ const createCategory = async(req, res) => {
                     categoryName: categoryName,
                 },
             });
-
+            // IF category EXIST in database
             if (categoryExists) {
                 return res.status(404).json({
                     success: false,
                     message: `Oops!! ${categoryName} already exists in the database`,
                 });
             } else {
+                // create the new category
                 const newCategory = await Category.create({
                     categoryName: categoryName,
                 });
@@ -88,24 +96,28 @@ const updateCategoryById = async(req, res) => {
             },
         });
 
+        // check IF id DOES NOT EXIST
         if (!idExists) {
             return res.status(404).json({
                 success: false,
                 message: `Oops!! Category with ID: ${id}, can not be found in database`,
             });
         } else {
+            // find a category by category_name
             const categoryExists = await Category.findOne({
                 where: {
                     categoryName: categoryName,
                 },
             });
 
+            // IF category EXISTS
             if (categoryExists) {
                 return res.status(404).json({
                     success: false,
                     message: `Oops!! ${categoryName} already exists in the database`,
                 });
             } else {
+                // IF category DOES NOT exist, update the targeted Category through ID
                 const newCategory = await Category.update({
                     categoryName: categoryName,
                 }, {
@@ -113,6 +125,8 @@ const updateCategoryById = async(req, res) => {
                         id: id,
                     },
                 });
+
+                // return the newCategory
                 return res.status(200).json({ success: true, data: newCategory });
             }
         }
@@ -124,25 +138,25 @@ const updateCategoryById = async(req, res) => {
 const deleteCategoryById = async(req, res) => {
     try {
         const { id } = req.params;
-
         const idExists = await Category.findOne({
             where: {
                 id: id,
             },
         });
-
+        //  check IF id DOES NOT EXIST
         if (!idExists) {
             return res.status(404).json({
                 success: false,
                 message: `Oops!! Category with ID: ${id}, can not be found in database`,
             });
         } else {
+            // get the category name client is deleting
             const { categoryName } = await Category.findOne({
                 where: {
                     id: id,
                 },
             });
-
+            // DELETE category if ID is a match
             await Category.destroy({
                 where: {
                     id: id,
