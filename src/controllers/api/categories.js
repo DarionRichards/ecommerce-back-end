@@ -1,44 +1,59 @@
 const { Category, Product } = require("../../models");
 
 const getAllCategories = async(req, res) => {
-    // find all categories
-    // be sure to include its associated Products
     try {
-        const categories = await Category.findAll({ include: Product });
-        return res.status(200).json({ success: true, data: categories });
+        const categories = await Category.findAll({
+            include: Product,
+        });
+        if (!categories.length) {
+            return res.status(404).json({
+                success: false,
+                message: "Oops!! No categories are found",
+            });
+        } else {
+            return res.status(200).json({ success: true, data: categories });
+        }
     } catch (err) {
         return res.status(500).json({ success: false, error: err.message });
     }
 };
 
 const getCategoryById = async(req, res) => {
-    // find one category by its `id` value
-    // be sure to include its associated Products
-
     try {
         const categoryId = await Category.findByPk(req.params.id, {
             include: Product,
         });
-        return res.status(200).json({ success: true, category: categoryId });
+        if (!categoryId) {
+            return res.status(404).json({
+                success: false,
+                message: "Oops!! No category can be found with that ID",
+            });
+        } else {
+            return res.status(200).json({ success: true, category: categoryId });
+        }
     } catch (err) {
         return res.status(500).json({ success: false, error: err.message });
     }
 };
 
 const createCategory = async(req, res) => {
-    // create a new category
     try {
         const { categoryName } = req.body;
-        console.log(categoryName);
 
-        const newCategory = await Category.create({
-            categoryName: categoryName,
-        });
+        if (!categoryName) {
+            return res
+                .status(422)
+                .json({ success: false, message: "Oops!! String was not valid" });
+        } else {
+            const newCategory = await Category.create({
+                categoryName: categoryName,
+            });
 
-        return res.status(200).json({
-            success: true,
-            data: newCategory,
-        });
+            return res.status(200).json({
+                success: true,
+                data: newCategory,
+            });
+        }
     } catch (err) {
         return res.status(500).json({
             success: false,
@@ -48,45 +63,62 @@ const createCategory = async(req, res) => {
 };
 
 const updateCategory = async(req, res) => {
-    // update a category by its `id` value
     try {
         const { id } = req.params;
-        console.log(id);
         const { categoryName } = req.body;
-        console.log(categoryName);
 
-        await Category.update({
-            categoryName: categoryName,
-        }, {
+        const idExists = await Category.findOne({
             where: {
                 id: id,
             },
         });
 
-        const newCategory = await Category.findByPk(id);
-        console.log(newCategory);
-
-        return res.status(200).json({ success: true, data: updateCategory });
+        if (!idExists) {
+            return res.status(404).json({
+                success: false,
+                message: "Oops!! Category does not exist",
+            });
+        } else {
+            const newCategory = await Category.update({
+                categoryName: categoryName,
+            }, {
+                where: {
+                    id: id,
+                },
+            });
+            return res.status(200).json({ success: true, data: newCategory });
+        }
     } catch (err) {
         return res.status(500).json({ succes: false, error: err.message });
     }
 };
 
 const deleteCategory = async(req, res) => {
-    // delete a category by its `id` value
     try {
         const { id } = req.params;
-        console.log(id);
-
-        await Category.destroy({
+        const categoryName = await Category.findOne({
             where: {
                 id: id,
             },
         });
 
-        return res.status(200).json({
-            success: true,
-        });
+        if (!categoryName) {
+            return res.status(404).json({
+                success: false,
+                message: "Oops!! Category does not exist",
+            });
+        } else {
+            await Category.destroy({
+                where: {
+                    id: id,
+                },
+            });
+
+            return res.status(200).json({
+                success: true,
+                message: `The ${categoryName.categoryName} category was deleted successfully.`,
+            });
+        }
     } catch (err) {
         return res.status(500).json({
             success: false,
