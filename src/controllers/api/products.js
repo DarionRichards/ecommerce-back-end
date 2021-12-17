@@ -1,20 +1,24 @@
 const { Product, Category, Tag, ProductTag } = require("../../models");
-const { update } = require("../../models/Category");
 
 const getAllProducts = async(req, res) => {
-    // find all products
-    // be sure to include its associated Category and Tag data
     try {
-        const data = await Product.findAll({
+        const productData = await Product.findAll({
             include: {
                 model: Category,
                 model: Tag,
             },
         });
-        return res.status(200).json({
-            success: true,
-            data: data,
-        });
+        if (!productData.length) {
+            return res.status(404).json({
+                success: false,
+                message: "No Products exists in database",
+            });
+        } else {
+            return res.status(200).json({
+                success: true,
+                data: productData,
+            });
+        }
     } catch (err) {
         return res.status(500).json({
             success: false,
@@ -24,19 +28,22 @@ const getAllProducts = async(req, res) => {
 };
 
 const getProductById = async(req, res) => {
-    // find a single product by its `id`
-    // be sure to include its associated Category and Tag data
     try {
         const { id } = req.params;
-        console.log(id);
 
-        const productData = await Product.findByPk(id);
+        const product = await Product.findByPk(id);
 
-        console.log(productData);
-        return res.status(200).json({
-            success: true,
-            data: productData,
-        });
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                message: "Product does not exist in database",
+            });
+        } else {
+            return res.status(200).json({
+                success: true,
+                data: product,
+            });
+        }
     } catch (err) {
         return res.status(500).json({
             success: false,
@@ -64,6 +71,7 @@ const createProduct = async(req, res) => {
             });
             await ProductTag.bulkCreate(productTagIdArr);
         }
+
         return res.status(200).json({
             success: true,
             productData: newProduct,
@@ -77,58 +85,59 @@ const updateProductById = async(req, res) => {
     try {
         const { id } = req.params;
         const { productName, price, stock, tagIds } = req.body;
-        console.log("Tag Payload:", tagIds);
 
-        // update product with name, price & stock
-        await Product.update({
-            productName,
-            price,
-            stock,
-        }, {
-            where: {
-                id: id,
-            },
-        });
-        const updatedProduct = await Product.findByPk(id);
+        const productExists = await Product.findByPk(id);
 
-        // get current tags related to productId
-        const associatedProductTags = await ProductTag.findAll({
-            where: { productId: id },
-        });
-        const currentProductTags = associatedProductTags.map(({ tagId }) => tagId);
-
-        const newProductTags = tagIds
-            .filter((tagId) => !currentProductTags.includes(tagId))
-            .map((tagId) => {
-                return {
-                    productId: id,
-                    tagId,
-                };
+        if (!productExists) {
+            return res.status(404).json({
+                success: false,
+                message: "Product does not exist in databse",
             });
+        } else {
+            await Product.update({
+                productName,
+                price,
+                stock,
+            }, {
+                where: {
+                    id: id,
+                },
+            });
+            const updatedProduct = await Product.findByPk(id);
 
-        console.log("Current Product Tags:", currentProductTags);
-        console.log("New Tags:", newProductTags);
+            const associatedProductTags = await ProductTag.findAll({
+                where: { productId: id },
+            });
+            const currentProductTags = associatedProductTags.map(({ tagId }) => tagId);
 
-        const productTagsToRemove = currentProductTags
-            .filter((tagId) => !tagIds.includes(tagId))
-            .map((tagId) => tagId);
+            const newProductTags = tagIds
+                .filter((tagId) => !currentProductTags.includes(tagId))
+                .map((tagId) => {
+                    return {
+                        productId: id,
+                        tagId,
+                    };
+                });
 
-        console.log("Product Tags to be Removed:", productTagsToRemove);
+            const productTagsToRemove = currentProductTags
+                .filter((tagId) => !tagIds.includes(tagId))
+                .map((tagId) => tagId);
 
-        await ProductTag.destroy({
-            where: {
-                productId: id,
-                tagId: productTagsToRemove,
-            },
-        });
-        await ProductTag.bulkCreate(newProductTags);
+            await ProductTag.destroy({
+                where: {
+                    productId: id,
+                    tagId: productTagsToRemove,
+                },
+            });
+            await ProductTag.bulkCreate(newProductTags);
 
-        return res.status(200).json({
-            success: true,
-            data: updatedProduct,
-            currentProductTags,
-            newProductTags,
-        });
+            return res.status(200).json({
+                success: true,
+                data: updatedProduct,
+                currentProductTags,
+                newProductTags,
+            });
+        }
     } catch (err) {
         return res.status(500).json({
             success: false,
@@ -142,29 +151,30 @@ const deleteProductById = async(req, res) => {
         const { id } = req.params;
 
         const productExists = await Product.findByPk(id);
+
         if (!productExists) {
-            return res.status(500).json({
+            return res.status(404).json({
                 success: false,
-                message: "Product does not exits",
+                message: "Product does not exist in database",
+            });
+        } else {
+            await Product.destroy({
+                where: {
+                    id: id,
+                },
+            });
+
+            await ProductTag.destroy({
+                where: {
+                    productId: id,
+                },
+            });
+
+            return res.status(200).json({
+                success: true,
+                message: "Product and associated Product Tags were deleted successfully",
             });
         }
-
-        await Product.destroy({
-            where: {
-                id: id,
-            },
-        });
-
-        await ProductTag.destroy({
-            where: {
-                productId: id,
-            },
-        });
-
-        return res.status(200).json({
-            success: true,
-            message: "Product and Product Tags deleted successfully",
-        });
     } catch (err) {
         return res.status(500).json({
             success: false,
