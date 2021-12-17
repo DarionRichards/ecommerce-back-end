@@ -36,7 +36,7 @@ const getProductById = async(req, res) => {
         if (!product) {
             return res.status(404).json({
                 success: false,
-                message: "Product does not exist in database",
+                message: `Product with ID: ${id}, does not exist in database`,
             });
         } else {
             return res.status(200).json({
@@ -56,31 +56,45 @@ const createProduct = async(req, res) => {
     try {
         const { productName, price, stock, tagIds } = req.body;
 
-        const newProduct = await Product.create({ productName, price, stock }, {
-            include: {
-                model: Category,
+        const productExists = await Product.findOne({
+            where: {
+                productName: productName,
             },
         });
 
-        if (tagIds.length) {
-            const productTagIdArr = tagIds.map((tagId) => {
-                return {
-                    productId: newProduct.id,
-                    tagId,
-                };
+        if (productExists) {
+            return res.status(404).json({
+                success: false,
+                message: `Oops!! ${productName} already exists in database`,
             });
-            await ProductTag.bulkCreate(productTagIdArr);
-        }
+        } else {
+            const newProduct = await Product.create({ productName, price, stock }, {
+                include: {
+                    model: Category,
+                },
+            });
 
-        return res.status(200).json({
-            success: true,
-            productData: newProduct,
-            tagIds,
-        });
+            if (tagIds.length) {
+                const productTagIdArr = tagIds.map((tagId) => {
+                    return {
+                        productId: newProduct.id,
+                        tagId,
+                    };
+                });
+                await ProductTag.bulkCreate(productTagIdArr);
+            }
+
+            return res.status(200).json({
+                success: true,
+                productData: newProduct,
+                tagIds,
+            });
+        }
     } catch (err) {
         return res.status(500).json(err.message);
     }
 };
+
 const updateProductById = async(req, res) => {
     try {
         const { id } = req.params;
@@ -91,7 +105,7 @@ const updateProductById = async(req, res) => {
         if (!productExists) {
             return res.status(404).json({
                 success: false,
-                message: "Product does not exist in databse",
+                message: `Product with ID: ${id} can not be updated, does not exist in databse`,
             });
         } else {
             await Product.update({
@@ -151,11 +165,12 @@ const deleteProductById = async(req, res) => {
         const { id } = req.params;
 
         const productExists = await Product.findByPk(id);
+        console.log(productExists);
 
         if (!productExists) {
             return res.status(404).json({
                 success: false,
-                message: "Product does not exist in database",
+                message: `Product with ID: ${id} can not be updated, does not exist in database`,
             });
         } else {
             await Product.destroy({
@@ -172,7 +187,7 @@ const deleteProductById = async(req, res) => {
 
             return res.status(200).json({
                 success: true,
-                message: "Product and associated Product Tags were deleted successfully",
+                message: `${productExists.productName} and associated Product Tags were deleted successfully`,
             });
         }
     } catch (err) {
