@@ -1,5 +1,4 @@
 const { Tag, Product } = require("../../models");
-const { findAll } = require("../../models/Category");
 
 const getAllTags = async(req, res) => {
     try {
@@ -7,10 +6,17 @@ const getAllTags = async(req, res) => {
             include: Product,
         });
 
-        return res.status(200).json({
-            success: true,
-            data: tagData,
-        });
+        if (!tagData.length) {
+            return res.status(404).json({
+                success: false,
+                message: "Oops!! No Tags not exist in database",
+            });
+        } else {
+            return res.status(200).json({
+                success: true,
+                data: tagData,
+            });
+        }
     } catch (err) {
         return res.status(500).json({
             success: false,
@@ -20,16 +26,23 @@ const getAllTags = async(req, res) => {
 };
 
 const getTagById = async(req, res) => {
-    // find a single tag by its `id`
-    // be sure to include its associated Product data
-
     try {
         const { id } = req.params;
         const tagData = await Tag.findByPk(id, {
             include: Product,
         });
 
-        return res.status(200).json(tagData);
+        if (!tagData) {
+            return res.status(404).json({
+                success: false,
+                message: `Oops!! The Tag with ID:${id}, does not exist in the database`,
+            });
+        } else {
+            return res.status(200).json({
+                success: true,
+                data: tagData,
+            });
+        }
     } catch (err) {
         return res.status(500).json({
             success: false,
@@ -39,7 +52,6 @@ const getTagById = async(req, res) => {
 };
 
 const createTag = async(req, res) => {
-    // create a new tag
     try {
         const { tagName } = req.body;
 
@@ -49,18 +61,18 @@ const createTag = async(req, res) => {
             },
         });
 
-        if (!tagNameExist) {
+        if (tagNameExist) {
+            return res.status(422).json({
+                success: false,
+                message: `Oops!! ${tagName} already exists in database.`,
+            });
+        } else {
             const newTag = await Tag.create({
                 tagName,
             });
             return res.status(200).json({
                 success: true,
                 data: newTag,
-            });
-        } else {
-            return res.status(403).json({
-                success: false,
-                message: "Tag already exists in database.",
             });
         }
     } catch (error) {
@@ -69,19 +81,24 @@ const createTag = async(req, res) => {
 };
 
 const updateTagById = async(req, res) => {
-    // update a tag's name by its `id` value
     try {
         const { id } = req.params;
         const { tagName } = req.body;
 
         const tagExists = await Tag.findOne({
             where: {
-                id: id,
+                tagName: tagName,
             },
         });
 
         if (tagExists) {
-            const updatedTag = await Tag.update({
+            return res.status(422).json({
+                success: false,
+                message: `Oops!! The tag ${tagName} already exist in database`,
+                data: tagExists,
+            });
+        } else {
+            await Tag.update({
                 tagName: tagName,
             }, {
                 where: {
@@ -89,14 +106,11 @@ const updateTagById = async(req, res) => {
                 },
             });
 
+            const updatedTag = await Tag.findByPk(id);
+
             return res.status(200).json({
                 success: true,
                 data: updatedTag,
-            });
-        } else {
-            return res.status(403).json({
-                success: false,
-                message: "This Tag ID already exist",
             });
         }
     } catch (err) {
@@ -108,7 +122,6 @@ const updateTagById = async(req, res) => {
 };
 
 const deleteTagById = async(req, res) => {
-    // delete on tag by its `id` value
     const { id } = req.params;
 
     try {
@@ -118,17 +131,17 @@ const deleteTagById = async(req, res) => {
             },
         });
 
-        if (idExists) {
+        if (!idExists) {
+            return res.status(404).json({
+                success: false,
+                message: `Oops!! Tag was not found by ID: ${id}`,
+            });
+        } else {
             await Tag.destroy({ where: { id } });
 
             return res.status(200).json({
                 success: true,
-                message: "Tag was deleted successfully",
-            });
-        } else {
-            return res.status(403).json({
-                success: true,
-                message: "Tag was not found",
+                message: "Wahoo!! Tag was deleted successfully",
             });
         }
     } catch (err) {

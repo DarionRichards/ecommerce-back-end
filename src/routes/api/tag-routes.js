@@ -1,7 +1,5 @@
 const { Router } = require("express");
 
-const { Tag, Product, ProductTag } = require("../../models");
-
 const {
     getAllTags,
     getTagById,
