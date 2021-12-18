@@ -62,10 +62,12 @@ const createTag = async(req, res) => {
     try {
         const { tagName } = req.body;
 
+        const lowerCaseTagName = tagName.toLowerCase();
+
         // find Tag by tag_name
         const tagNameExist = await Tag.findOne({
             where: {
-                tagName: tagName,
+                tagName: lowerCaseTagName,
             },
         });
 
@@ -79,7 +81,7 @@ const createTag = async(req, res) => {
             // IF Tag DOES NOT EXIST
             // create the new Tag
             const newTag = await Tag.create({
-                tagName,
+                tagName: lowerCaseTagName,
             });
 
             // return the new tag

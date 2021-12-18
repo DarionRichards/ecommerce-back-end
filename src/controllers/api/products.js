@@ -61,10 +61,18 @@ const createProduct = async(req, res) => {
     try {
         const { productName, price, stock, tagIds } = req.body;
 
+        const camelCaseProduct = productName.split(" ");
+
+        const newProductName = camelCaseProduct
+            .map((word) => {
+                return word[0].toUpperCase() + word.substring(1);
+            })
+            .join(" ");
+
         // find product by product_name
         const productExists = await Product.findOne({
             where: {
-                productName: productName,
+                productName: newProductName,
             },
         });
 
@@ -76,7 +84,7 @@ const createProduct = async(req, res) => {
             });
         } else {
             // create a new Product
-            const newProduct = await Product.create({ productName, price, stock }, {
+            const newProduct = await Product.create({ productName: newProductName, price, stock }, {
                 include: {
                     model: Category,
                 },

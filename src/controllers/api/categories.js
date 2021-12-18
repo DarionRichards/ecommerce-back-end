@@ -47,6 +47,9 @@ const createCategory = async(req, res) => {
     try {
         const { categoryName } = req.body;
 
+        const capitalizeCategoryName =
+            categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
+
         // check IF request body was a valid entry
         if (!categoryName) {
             return res.status(422).json({
@@ -56,9 +59,10 @@ const createCategory = async(req, res) => {
         } else {
             const categoryExists = await Category.findOne({
                 where: {
-                    categoryName: categoryName,
+                    categoryName: capitalizeCategoryName,
                 },
             });
+
             // IF category EXIST in database
             if (categoryExists) {
                 return res.status(404).json({
@@ -68,7 +72,7 @@ const createCategory = async(req, res) => {
             } else {
                 // create the new category
                 const newCategory = await Category.create({
-                    categoryName: categoryName,
+                    categoryName: capitalizeCategoryName,
                 });
 
                 return res.status(200).json({
