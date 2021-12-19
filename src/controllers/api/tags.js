@@ -65,21 +65,19 @@ const createTag = async(req, res) => {
         if (!tagName) {
             return res.status(422).json({
                 success: false,
-                message: "Oops!! Tag name was not valid",
+                message: "Oops!! Tag name was not a valid string",
             });
         } else {
-            const lowerCaseTagName = tagName.toLowerCase();
-
             // find Tag by tag_name
             const tagNameExist = await Tag.findOne({
                 where: {
-                    tagName: lowerCaseTagName,
+                    tagName: tagName,
                 },
             });
 
             // IF Tag EXISTS
             if (tagNameExist) {
-                return res.status(422).json({
+                return res.status(404).json({
                     success: false,
                     message: `Oops!! ${tagName} already exists in database.`,
                 });
@@ -87,7 +85,7 @@ const createTag = async(req, res) => {
                 // IF Tag DOES NOT EXIST
                 // create the new Tag
                 const newTag = await Tag.create({
-                    tagName: lowerCaseTagName,
+                    tagName: tagName.toLowerCase(),
                 });
 
                 // return the new tag
@@ -107,39 +105,54 @@ const updateTagById = async(req, res) => {
         const { id } = req.params;
         const { tagName } = req.body;
 
-        // find Tag by tag_name
-        const tagExists = await Tag.findOne({
-            where: {
-                tagName: tagName,
-            },
-        });
+        const idExists = await Tag.findByPk(id);
 
-        // IF Tag EXISTS
-        if (tagExists) {
-            return res.status(422).json({
+        if (!idExists) {
+            return res.status(404).json({
                 success: false,
-                message: `Oops!! The tag ${tagName} already exist in database`,
-                data: tagExists,
+                message: `Oops!! The Tag with ID: ${id}, was not found in database`,
             });
         } else {
-            // IF Tag DOES NOT EXIST in database
-            // update to new Tag
-            await Tag.update({
-                tagName: tagName,
-            }, {
-                where: {
-                    id: id,
-                },
-            });
+            if (!tagName) {
+                return res.status(422).json({
+                    success: false,
+                    message: "Oops!! The Tag name was not a valid string",
+                });
+            } else {
+                // find Tag by tag_name
+                const tagExists = await Tag.findOne({
+                    where: {
+                        tagName: tagName,
+                    },
+                });
 
-            // get the new updated Tag from database
-            const updatedTag = await Tag.findByPk(id);
+                // IF Tag EXISTS
+                if (tagExists) {
+                    return res.status(422).json({
+                        success: false,
+                        message: `Oops!! The tag ${tagName} already exist in database`,
+                        data: tagExists,
+                    });
+                } else {
+                    // update to new Tag
+                    await Tag.update({
+                        tagName: tagName.toLowerCase(),
+                    }, {
+                        where: {
+                            id: id,
+                        },
+                    });
 
-            // return the updated Tag
-            return res.status(200).json({
-                success: true,
-                data: updatedTag,
-            });
+                    // get the new updated Tag from database
+                    const updatedTag = await Tag.findByPk(id);
+
+                    // return the updated Tag
+                    return res.status(200).json({
+                        success: true,
+                        data: updatedTag,
+                    });
+                }
+            }
         }
     } catch (err) {
         return res.status(500).json({

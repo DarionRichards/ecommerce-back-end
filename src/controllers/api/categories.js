@@ -49,19 +49,16 @@ const createCategory = async(req, res) => {
     try {
         const { categoryName } = req.body;
 
-        // check IF request body was a valid entry
+        // check IF category name in request body was a valid string
         if (!categoryName) {
             return res.status(422).json({
                 success: false,
-                message: `Oops!! Category name was not valid`,
+                message: `Oops!! Category name was not a valid string`,
             });
         } else {
-            // make string camel case to store
-            const capitalizeCategoryName = capitalizeString(categoryName);
-
             const categoryExists = await Category.findOne({
                 where: {
-                    categoryName: capitalizeCategoryName,
+                    categoryName: categoryName,
                 },
             });
 
@@ -69,12 +66,12 @@ const createCategory = async(req, res) => {
             if (categoryExists) {
                 return res.status(404).json({
                     success: false,
-                    message: `Oops!! ${capitalizeCategoryName} already exists in the database`,
+                    message: `Oops!! ${categoryName} already exists in the database`,
                 });
             } else {
                 // create the new category
                 const newCategory = await Category.create({
-                    categoryName: capitalizeCategoryName,
+                    categoryName: capitalizeString(categoryName),
                 });
 
                 return res.status(200).json({
@@ -96,44 +93,50 @@ const updateCategoryById = async(req, res) => {
         const { id } = req.params;
         const { categoryName } = req.body;
 
-        const idExists = await Category.findOne({
-            where: {
-                id: id,
-            },
-        });
+        const idExists = await Category.findByPk(id);
 
         // check IF id DOES NOT EXIST
         if (!idExists) {
             return res.status(404).json({
                 success: false,
-                message: `Oops!! Category with ID: ${id}, can not be found in database`,
+                message: `Oops!! Category with ID: ${id} can not be updated, does not exist in databse`,
             });
         } else {
-            // find a category by category_name
-            const categoryExists = await Category.findOne({
-                where: {
-                    categoryName: categoryName,
-                },
-            });
-
-            // IF category EXISTS
-            if (categoryExists) {
-                return res.status(404).json({
+            // check IF category name in request body was a valid string
+            if (!categoryName) {
+                return res.status(422).json({
                     success: false,
-                    message: `Oops!! ${categoryName} already exists in the database`,
+                    message: "Oops!! Category name was not a valid string",
                 });
             } else {
-                // IF category DOES NOT exist, update the targeted Category through ID
-                const newCategory = await Category.update({
-                    categoryName: categoryName,
-                }, {
+                // find a category by category_name
+                const categoryExists = await Category.findOne({
                     where: {
-                        id: id,
+                        categoryName: categoryName,
                     },
                 });
 
-                // return the newCategory
-                return res.status(200).json({ success: true, data: newCategory });
+                // IF category EXISTS
+                if (categoryExists) {
+                    return res.status(404).json({
+                        success: false,
+                        message: `Oops!! ${categoryName} already exists in the database`,
+                    });
+                } else {
+                    // IF category DOES NOT exist, update the targeted Category through ID
+                    await Category.update({
+                        categoryName: capitalizeString(categoryName),
+                    }, {
+                        where: {
+                            id: id,
+                        },
+                    });
+
+                    const newCategory = await Category.findByPk(id);
+
+                    // return the newCategory
+                    return res.status(200).json({ success: true, data: newCategory });
+                }
             }
         }
     } catch (err) {

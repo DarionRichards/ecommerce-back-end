@@ -62,19 +62,17 @@ const createProduct = async(req, res) => {
     try {
         const { productName, price, stock, tagIds } = req.body;
 
-        // check if valid string
-        if (!productName) {
+        // check if valid request body
+        if (!productName || !price || !stock) {
             return res.status(422).json({
                 success: false,
-                message: "Oops!! The product name was not valid",
+                message: "Oops!! A value within the request body was not valid",
             });
         } else {
-            const camelCaseProduct = capitalizeString(productName);
-
             // find product by product_name
             const productExists = await Product.findOne({
                 where: {
-                    productName: camelCaseProduct,
+                    productName: productName,
                 },
             });
 
@@ -86,7 +84,11 @@ const createProduct = async(req, res) => {
                 });
             } else {
                 // create a new Product
-                const newProduct = await Product.create({ productName: camelCaseProduct, price, stock }, {
+                const newProduct = await Product.create({
+                    productName: capitalizeString(productName),
+                    price,
+                    stock,
+                }, {
                     include: {
                         model: Category,
                     },
@@ -94,7 +96,7 @@ const createProduct = async(req, res) => {
 
                 // check IF updated product has associated TAGS to create
                 if (tagIds.length) {
-                    // go over each Tag from bodu and relate new Product ID
+                    // create an object with the product ID related to each tag provided
                     const productTagIdArr = tagIds.map((tagId) => {
                         return {
                             productId: newProduct.id,
@@ -132,61 +134,69 @@ const updateProductById = async(req, res) => {
                 message: `Product with ID: ${id} can not be updated, does not exist in databse`,
             });
         } else {
-            // IF Product EXISTS
-
-            // update records where product_id === id
-            await Product.update({
-                productName,
-                price,
-                stock,
-            }, {
-                where: {
-                    id: id,
-                },
-            });
-
-            // find EACH current associated product tags from ProductTag model
-            const associatedProductTags = await ProductTag.findAll({
-                where: { productId: id },
-            });
-            const currentProductTags = associatedProductTags.map(({ tagId }) => tagId);
-
-            // remove currentProductTags that do not match NEW tagIds from req.body
-            const newProductTags = tagIds
-                .filter((tagId) => !currentProductTags.includes(tagId))
-                .map((tagId) => {
-                    return {
-                        productId: id,
-                        tagId,
-                    };
+            // check if request body is valid
+            if (!productName || !price || !stock) {
+                return res.status(422).json({
+                    success: false,
+                    message: "Oops!! A value within the request body was not valid",
+                });
+            } else {
+                // update records where product_id === id
+                await Product.update({
+                    productName: capitalizeString(productName),
+                    price,
+                    stock,
+                }, {
+                    where: {
+                        id: id,
+                    },
                 });
 
-            // store Tags in array which are to be destroyed
-            const productTagsToRemove = currentProductTags
-                .filter((tagId) => !tagIds.includes(tagId))
-                .map((tagId) => tagId);
+                // find EACH current associated product tags from ProductTag model
+                const associatedProductTags = await ProductTag.findAll({
+                    where: { productId: id },
+                });
+                const currentProductTags = associatedProductTags.map(
+                    ({ tagId }) => tagId
+                );
 
-            // destroy uneccessary related tags to new product
-            await ProductTag.destroy({
-                where: {
-                    productId: id,
-                    tagId: productTagsToRemove,
-                },
-            });
+                // remove currentProductTags that do not match the NEW tagIds from req.body
+                const newProductTags = tagIds
+                    .filter((tagId) => !currentProductTags.includes(tagId))
+                    .map((tagId) => {
+                        return {
+                            productId: id,
+                            tagId,
+                        };
+                    });
 
-            // create the new related tags
-            await ProductTag.bulkCreate(newProductTags);
+                // store Tags in array which are to be destroyed
+                const productTagsToRemove = currentProductTags
+                    .filter((tagId) => !tagIds.includes(tagId))
+                    .map((tagId) => tagId);
 
-            // find the recently updated product
-            const updatedProduct = await Product.findByPk(id);
+                // destroy uneccessary related tags to new product
+                await ProductTag.destroy({
+                    where: {
+                        productId: id,
+                        tagId: productTagsToRemove,
+                    },
+                });
 
-            // return if product was updated successfully
-            return res.status(200).json({
-                success: true,
-                data: updatedProduct,
-                currentProductTags,
-                newProductTags,
-            });
+                // create the new related tags
+                await ProductTag.bulkCreate(newProductTags);
+
+                // find the recently updated product
+                const updatedProduct = await Product.findByPk(id);
+
+                // return if product was updated successfully
+                return res.status(200).json({
+                    success: true,
+                    data: updatedProduct,
+                    currentProductTags,
+                    newProductTags,
+                });
+            }
         }
     } catch (err) {
         return res.status(500).json({
