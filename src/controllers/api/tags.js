@@ -62,33 +62,40 @@ const createTag = async(req, res) => {
     try {
         const { tagName } = req.body;
 
-        const lowerCaseTagName = tagName.toLowerCase();
-
-        // find Tag by tag_name
-        const tagNameExist = await Tag.findOne({
-            where: {
-                tagName: lowerCaseTagName,
-            },
-        });
-
-        // IF Tag EXISTS
-        if (tagNameExist) {
+        if (!tagName) {
             return res.status(422).json({
                 success: false,
-                message: `Oops!! ${tagName} already exists in database.`,
+                message: "Oops!! Tag name was not valid",
             });
         } else {
-            // IF Tag DOES NOT EXIST
-            // create the new Tag
-            const newTag = await Tag.create({
-                tagName: lowerCaseTagName,
+            const lowerCaseTagName = tagName.toLowerCase();
+
+            // find Tag by tag_name
+            const tagNameExist = await Tag.findOne({
+                where: {
+                    tagName: lowerCaseTagName,
+                },
             });
 
-            // return the new tag
-            return res.status(200).json({
-                success: true,
-                data: newTag,
-            });
+            // IF Tag EXISTS
+            if (tagNameExist) {
+                return res.status(422).json({
+                    success: false,
+                    message: `Oops!! ${tagName} already exists in database.`,
+                });
+            } else {
+                // IF Tag DOES NOT EXIST
+                // create the new Tag
+                const newTag = await Tag.create({
+                    tagName: lowerCaseTagName,
+                });
+
+                // return the new tag
+                return res.status(200).json({
+                    success: true,
+                    data: newTag,
+                });
+            }
         }
     } catch (error) {
         return res.status(500).json();

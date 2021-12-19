@@ -1,5 +1,7 @@
 const { Category, Product } = require("../../models");
 
+const { capitalizeString } = require("../../utils/capitalizeString");
+
 const getAllCategories = async(req, res) => {
     try {
         const categories = await Category.findAll({
@@ -47,16 +49,16 @@ const createCategory = async(req, res) => {
     try {
         const { categoryName } = req.body;
 
-        const capitalizeCategoryName =
-            categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
-
         // check IF request body was a valid entry
         if (!categoryName) {
             return res.status(422).json({
                 success: false,
-                message: `Oops!! String was not valid`,
+                message: `Oops!! Category name was not valid`,
             });
         } else {
+            // make string camel case to store
+            const capitalizeCategoryName = capitalizeString(categoryName);
+
             const categoryExists = await Category.findOne({
                 where: {
                     categoryName: capitalizeCategoryName,
@@ -67,7 +69,7 @@ const createCategory = async(req, res) => {
             if (categoryExists) {
                 return res.status(404).json({
                     success: false,
-                    message: `Oops!! ${categoryName} already exists in the database`,
+                    message: `Oops!! ${capitalizeCategoryName} already exists in the database`,
                 });
             } else {
                 // create the new category

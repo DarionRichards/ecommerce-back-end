@@ -1,4 +1,5 @@
 const { Product, Category, Tag, ProductTag } = require("../../models");
+const { capitalizeString } = require("../../utils/capitalizeString");
 
 const getAllProducts = async(req, res) => {
     try {
@@ -61,54 +62,56 @@ const createProduct = async(req, res) => {
     try {
         const { productName, price, stock, tagIds } = req.body;
 
-        const camelCaseProduct = productName.split(" ");
-
-        const newProductName = camelCaseProduct
-            .map((word) => {
-                return word[0].toUpperCase() + word.substring(1);
-            })
-            .join(" ");
-
-        // find product by product_name
-        const productExists = await Product.findOne({
-            where: {
-                productName: newProductName,
-            },
-        });
-
-        // IF product EXISTS
-        if (productExists) {
-            return res.status(404).json({
+        // check if valid string
+        if (!productName) {
+            return res.status(422).json({
                 success: false,
-                message: `Oops!! ${productName} already exists in database`,
+                message: "Oops!! The product name was not valid",
             });
         } else {
-            // create a new Product
-            const newProduct = await Product.create({ productName: newProductName, price, stock }, {
-                include: {
-                    model: Category,
+            const camelCaseProduct = capitalizeString(productName);
+
+            // find product by product_name
+            const productExists = await Product.findOne({
+                where: {
+                    productName: camelCaseProduct,
                 },
             });
 
-            // check IF updated product has associated TAGS to create
-            if (tagIds.length) {
-                // go over each Tag from bodu and relate new Product ID
-                const productTagIdArr = tagIds.map((tagId) => {
-                    return {
-                        productId: newProduct.id,
-                        tagId,
-                    };
+            // IF product EXISTS
+            if (productExists) {
+                return res.status(404).json({
+                    success: false,
+                    message: `Oops!! ${productName} already exists in database`,
                 });
-                // create a new ProductTag using productTagIdArr(ProductIDs and TagIDs)
-                await ProductTag.bulkCreate(productTagIdArr);
-            }
+            } else {
+                // create a new Product
+                const newProduct = await Product.create({ productName: camelCaseProduct, price, stock }, {
+                    include: {
+                        model: Category,
+                    },
+                });
 
-            // return if product was created successfully
-            return res.status(200).json({
-                success: true,
-                productData: newProduct,
-                tagIds,
-            });
+                // check IF updated product has associated TAGS to create
+                if (tagIds.length) {
+                    // go over each Tag from bodu and relate new Product ID
+                    const productTagIdArr = tagIds.map((tagId) => {
+                        return {
+                            productId: newProduct.id,
+                            tagId,
+                        };
+                    });
+                    // create a new ProductTag using productTagIdArr(ProductIDs and TagIDs)
+                    await ProductTag.bulkCreate(productTagIdArr);
+                }
+
+                // return if product was created successfully
+                return res.status(200).json({
+                    success: true,
+                    productData: newProduct,
+                    tagIds,
+                });
+            }
         }
     } catch (err) {
         return res.status(500).json(err.message);
